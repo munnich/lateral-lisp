@@ -89,14 +89,17 @@ function getfft(fnames::Array{String})
 end
 
 function main(args)
-	numfiles = length(readdir(args["folder_a"]))
+    # the filenames should be the same anyway so we only need to read a
+    folder_a = readdir(args["folder_a"])
+	numfiles = length(folder_a)
 
     # arrays not tuples for theoretical support of >2 files
     results = Array{Array{FFTResult}}(undef, numfiles)
 	
     # multithreaded loop for getting the ffts
 	Threads.@threads for i in 1:numfiles
-        results[i] = getfft(["$(args["folder_a"])/$i.wav", "$(args["folder_b"])/$i.wav"])
+        results[i] = getfft(["$(args["folder_a"])/$(folder_a[i])",
+                             "$(args["folder_b"])/$(folder_a[i])"])
 	end
 
     # singlethreaded for plotting - this is the really inefficient part
@@ -127,9 +130,13 @@ function main(args)
         # lisp's mean in this range is usually in [1.5, 1.6]
         slice = 1200:1:3500
         slicedfftmean = [mean(r.fftmagnitude) for r in results[i]]
+        # ansatz: max mean in these frequencies is lisp!
         slicemax = findmax(slicedfftmean)
+        # check if our max indeed has a mean in [1.5, 1.6] +/- 0.05
+        checkthresh = slicemax[1] > 1.45 && slicemax[1] < 1.65
+
         println("$(results[i][slicemax[2]].title) detected as lisp with $(slicemax[1]), " *
-                "all means: $slicedfftmean") 
+                "threshold pass: $checkthresh, all means: $slicedfftmean") 
     end
 end
 

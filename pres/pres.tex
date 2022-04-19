@@ -1,5 +1,5 @@
 \documentclass[11pt]{beamer}
-\usetheme{Pittsburgh}
+\usetheme{Montpellier}
 \usecolortheme{orchid}
 \usepackage[utf8]{inputenc}
 \usepackage[german]{babel}
@@ -10,24 +10,25 @@
 \usepackage{graphicx}
 \usepackage{url}
 \author{Patrick M\"unnich}
-\title{Sigmatismus Lateralis}
-%\setbeamercovered{transparent} 
-%\setbeamertemplate{navigation symbols}{} 
-%\logo{} 
+\title{Signalverarbeitung-basierte Identifizierung des Sigmatismus Lateralis}
+%\setbeamercovered{transparent}
+\setbeamertemplate{navigation symbols}{} 
 \institute{Hochschule D\"usseldorf} 
 %\date{} 
-%\subject{} 
+\subject{Signalverarbeitung} 
 \begin{document}
 
 \begin{frame}
 \titlepage
 \end{frame}
 
+\section{Inhaltsverzeichnis}
+
 \begin{frame}
 \tableofcontents
 \end{frame}
 
-\section{Der Sigmatismus Lateralis}
+\section{Sigmatismus Lateralis}
 
 \begin{frame}
 \frametitle{Sigmatismus Lateralis}
@@ -45,10 +46,10 @@
 
 \section{Vergleich von FFTs}
 
-\subsection{Informationen}
+\subsection{Parameter}
 
 \begin{frame}
-\frametitle{Informationen zum Vergleich}
+\frametitle{Parameterinformationen zum Vergleich}
 \begin{exampleblock}{Parameter beim Vergleich}
 \begin{itemize}
 \item Einfache Aufnahme mit Mikrofon neben Mund
@@ -110,6 +111,19 @@ Screenshots w"aren hier leider zu gro"s
 \item[$\Rightarrow$] Schien konsistent "uber alle Aufnahmen
 \end{enumerate}
 \end{block}
+\end{frame}
+
+\section{Plan}
+
+\begin{frame}
+	\frametitle{Plan}
+	\begin{enumerate}
+		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz
+		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und "Uberpr"ufung der bisherigen Methode
+		\item Identifizierung des (in)korrekten ''s'' durch Analyse der Durchschnittsamplitude im Frequenzbereich
+		\item Entwicklung weiterer, weniger primitiverer Verfahren
+		\item Viel komplizierter, sp"ater: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden
+	\end{enumerate}
 \end{frame}
 
 \end{document}
