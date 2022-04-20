@@ -1,4 +1,4 @@
-using Plots, FFTW, WAV, Statistics, ArgParse
+using Plots, FFTW, WAV, Statistics, ArgParse, LinearAlgebra
 
 function parse()
 	s = ArgParseSettings()
@@ -52,7 +52,7 @@ function getfft(fname::String)
     wavdata = wavread(fname)
     audio = wavdata[1]
     fs::Int = wavdata[2]
-    # subtract mean to account for volume differences
+    # subtract mean
     audiomean = mean(audio)
     audio = audio .- audiomean
 
@@ -70,9 +70,11 @@ function getfft(fnames::Array{String})
         wavdata = wavread(fnames[i])
 
 		wavaudio = wavdata[1]
-		# subtract mean to account for volume differences
+		# subtract mean
 		audiomean = mean(wavaudio)
 		wavaudio = wavaudio .- audiomean
+        # it might be worth normalizing here?
+        normalize!(wavaudio)
         # memory optimization - don't ask
         push!(audio, wavaudio)
 
@@ -119,21 +121,24 @@ function main(args)
             # fft plot
             push!(plots, plot((args["start"] - 1):(limit - 1),
                               results[i][j].fftmagnitude[args["start"]:limit],
-                              title="FFT" * results[i][j].title,
+                              title="FFT " * results[i][j].title,
                               xlabel="Frequency [Hz]", ylabel="Amplitude"))
         end
         plot(plots..., layout=(2, 2), legend=false)
 		savefig("output/$(args["folder_a"])_vs_$(args["folder_b"])_$i.$(args["format"])")
 
+        # !!! this should be moved into the multithreaded loop !!!
+        # printing still needs to be done here for obvious reasons but not the calc
+
         # cut out a slice and compare FFTs
         # [1200, 3500] seems to work quite well
-        # lisp's mean in this range is usually in [1.5, 1.6]
         slice = 1200:1:3500
-        slicedfftmean = [mean(r.fftmagnitude) for r in results[i]]
+        # we use mean of the sliced normalized FFT magnitude to identify the lisp
+        slicedfftmean = [mean(normalize(r.fftmagnitude)[slice]) for r in results[i]]
         # ansatz: max mean in these frequencies is lisp!
         slicemax = findmax(slicedfftmean)
-        # check if our max indeed has a mean in [1.5, 1.6] +/- 0.05
-        checkthresh = slicemax[1] > 1.45 && slicemax[1] < 1.65
+        # check if our max indeed has a mean in [0.0075, 0.0080] (magic number)
+        checkthresh = slicemax[1] > 0.0075 && slicemax[1] < 0.0080
 
         println("$(results[i][slicemax[2]].title) detected as lisp with $(slicemax[1]), " *
                 "threshold pass: $checkthresh, all means: $slicedfftmean") 
