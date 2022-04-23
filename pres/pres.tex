@@ -9,8 +9,22 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{url}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows}
+\tikzset{
+block/.style={
+  draw, 
+  rectangle, 
+  minimum height=1.5cm, 
+  minimum width=3cm, align=center
+  }, 
+line/.style={->,>=latex'}
+}
+\def\checkmark{\tikz\fill[fill=green!50!black,scale=0.4](0,.35) -- (.25,0) -- (1,.75) -- (.25,.15) -- cycle;} 
+
 \author{Patrick M\"unnich}
-\title{Signalverarbeitung-basierte Identifizierung des Sigmatismus Lateralis}
+\title{Identifizierung des Sigmatismus Lateralis in Audioaufnahmen}
 %\setbeamercovered{transparent}
 \setbeamertemplate{navigation symbols}{} 
 \institute{Hochschule D\"usseldorf} 
@@ -46,7 +60,7 @@
 
 \section{Vergleich von FFTs}
 
-\subsection{Parameter}
+\subsection{Parameter und Code}
 
 \begin{frame}
 \frametitle{Parameterinformationen zum Vergleich}
@@ -55,12 +69,47 @@
 \item Einfache Aufnahme mit Mikrofon neben Mund
 \item 16-bit mono mit $f_\mathrm{sampling}=8000$\,Hz
 \item Insgesamt drei Aufnahmen
-\item Alle Aufnahmen nur ''s'' Ger"ausch mit oder ohne Lispeln
+\item Alle Aufnahmen nur stimmloses ''s'' Ger"ausch mit oder ohne Lispeln
 \end{itemize}
 \end{exampleblock}
 \begin{block}{Code}
 \url{https://github.com/munnich/lateral-lisp}
 \end{block}
+\end{frame}
+
+\begin{frame}
+\frametitle{Erl"autering des Codes}
+\begin{figure}
+\scalebox{0.5}{
+\begin{tikzpicture}
+
+\node[block]	(read)														{Audiodatei \\ einlesen};
+\node[block]	(parameters)		[above right=0.2cm and 2cm of read]			{Parameter \\ feststellen};
+\node[block]	(subtraction)	[below right=0.2cm and 2cm of read]			{Subtraktion des \\ Mittelwerts};
+\node[block]	(normalizesub)	[right=of subtraction]						{Normalisierung};
+\node[block]	(absfft)			[right=of normalizesub]						{Absolutwerte \\ FFT};
+\node[block]	(slice)			[below right=1cm and 2cm of absfft]			{Begrenzung auf \\ bestimmte Frequenzen};
+\node[block]	(plot)			[above=4.5cm of slice]					{Plotten};
+\node[block]	(normalizefft)	[left=of slice]								{Normalisierung};
+\node[block]	(mean)			[left=of normalizefft]						{Mittelwerte \\ berechnen};
+\node[block]	(findmax)		[left=of mean]								{Maximalwert \\ finden};
+\node[block]	(thresh)			[left=of findmax]							{Verifizierung durch \\ Referenzwerte};
+
+\draw[line] (read.north) |- (parameters.west);
+\draw[line] (read.south) |- (subtraction.west);
+\draw[line] (subtraction.east) -- (normalizesub.west);
+\draw[line] (normalizesub.east) -- (absfft.west);
+\draw[line] (absfft.east) -| (plot.south);
+\draw[line] (absfft.east) -| (slice.north);
+\draw[line] (parameters.east) -- (plot.west);
+\draw[line] (slice.west) -- (normalizefft.east);
+\draw[line] (normalizefft.west) -- (mean.east);
+\draw[line] (mean.west) -- (findmax.east);
+\draw[line] (findmax.west) -- (thresh.east);
+\end{tikzpicture}
+}
+\caption{Funktionsweise des derzeitigen Codes zur Identifizierung des Sigmatismus Lateralis in Aufnahmen}
+\end{figure}
 \end{frame}
 
 \subsection{Vergleich}
@@ -89,7 +138,7 @@
 \end{figure}
 \end{frame}
 
-\subsection{Festellungen}
+\subsection{Feststellungen}
 
 \begin{frame}
 \frametitle{Feststellungen bei Vergleich von FFTs}
@@ -118,11 +167,10 @@ Screenshots w"aren hier leider zu gro"s
 \begin{frame}
 	\frametitle{Plan}
 	\begin{enumerate}
-		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz
+		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
 		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und "Uberpr"ufung der bisherigen Methode
-		\item Identifizierung des (in)korrekten ''s'' durch Analyse der Durchschnittsamplitude im Frequenzbereich
-		\item Entwicklung weiterer, weniger primitiverer Verfahren
-		\item Viel komplizierter, sp"ater: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden
+		\item Identifizierung (in)korrekten ''s'' ohne Referenz-''s'', z.B.\ durch einfache Analyse der Durchschnittsamplitude im Frequenzbereich
+		\item Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
 	\end{enumerate}
 \end{frame}
 
