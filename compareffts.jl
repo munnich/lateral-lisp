@@ -55,6 +55,7 @@ end
 function getfft(fname::String)
     title = replace(fname, "/" => ": ")
     title = replace(title, ".wav" => "")
+    title = replace(title, "_" => " ")
     title = uppercasefirst(title)
 
     wavdata = wavread(fname)
@@ -63,6 +64,7 @@ function getfft(fname::String)
     # subtract mean
     audiomean = mean(audio)
     audio = audio .- audiomean
+    normalize!(audio)
 
     fftdata = fft(audio)
     fftmagnitude = abs.(fftdata)
@@ -88,6 +90,7 @@ function getfft(fnames::Array{String})
 
 		title = replace(fnames[i], "/" => ": ")
 		title = replace(title, ".wav" => "")
+        title = replace(title, "_" => " ")
 		title = uppercasefirst(title)
 
         fftdata = fft(audio[i])
@@ -99,10 +102,7 @@ function getfft(fnames::Array{String})
 end
 
 #=
-   Main section
-
-   This contains the main function that is run.
-   It also includes a LispResult struct to house identified lisps.
+   Slice examination and lisp detection section
 =#
 
 struct LispResult
@@ -124,8 +124,13 @@ function examineslice(input::Array{FFTResult}, slice::StepRange{Int64, Int64})
     return LispResult(input[slicemax[2]].title, slicemax[1], checkthresh, slicedfftmean)
 end
 
+#=
+   Main section
+=#
+
 function main(args)
-    # the filenames should be the same anyway so we only need to read a
+    println("Finished compilation, starting FFT examination...")
+    # the filenames should be the same anyway so we only need to read folder_a
     folder_a = readdir(args["folder_a"])
 	numfiles = length(folder_a)
 
@@ -144,6 +149,7 @@ function main(args)
         lisps[i] = examineslice(results[i], slice)
 	end
 
+    println("Plotting...")
     # singlethreaded for plotting - this is the really inefficient part
     # printing needs to go here too
     for i in 1:numfiles
@@ -166,13 +172,15 @@ function main(args)
                               xlabel="Frequency [Hz]", ylabel="Amplitude"))
         end
         plot(plots..., layout=(2, 2), legend=false)
-        # it would probably be worth changing the output file name to include input file names
-		savefig("output/$(args["folder_a"])_vs_$(args["folder_b"])_$i.$(args["format"])")
+        figname = lowercase(folder_a[i])
+        figname = replace(figname, ".wav" => "")
+        savefig("output/$(args["folder_a"])_vs_$(args["folder_b"])_$figname.$(args["format"])")
 
         println("$(lisps[i].title) detected as lisp with $(lisps[i].mean), " *
                 "within expected frequencies: $(lisps[i].likely), " *
                 "all means: $(lisps[i].allmeans)") 
     end
+    println("Finished.")
 end
 
 @time main(parse())

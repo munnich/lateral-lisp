@@ -9,6 +9,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{url}
+\usepackage[export]{adjustbox}
 
 \usepackage{tikz}
 \usetikzlibrary{positioning, arrows}
@@ -32,9 +33,9 @@ line/.style={->,>=latex'}
 \subject{Signalverarbeitung} 
 \begin{document}
 
-\begin{frame}
-\titlepage
-\end{frame}
+%\begin{frame}
+%\titlepage
+%\end{frame}
 
 \section{Inhaltsverzeichnis}
 
@@ -48,7 +49,7 @@ line/.style={->,>=latex'}
 \frametitle{Sigmatismus Lateralis}
 \begin{figure}
 \includegraphics[scale=0.4]{lateral_lisp.png}
-\caption{Sigmatismus Lateralis verglichen mit normalem S. (\url{https://www.pinterest.com/pin/7248049373293660/})}
+\caption{Sigmatismus Lateralis (SL) verglichen mit normalem ''s''. (\url{https://www.pinterest.com/pin/7248049373293660/})}
 \end{figure}
 \end{frame}
 
@@ -60,25 +61,40 @@ line/.style={->,>=latex'}
 
 \section{Vergleich von FFTs}
 
-\subsection{Parameter und Code}
+\subsection{Vergleichsparameter}
 
 \begin{frame}
-\frametitle{Parameterinformationen zum Vergleich}
-\begin{exampleblock}{Parameter beim Vergleich}
+\frametitle{Vergleichsparameter}
 \begin{itemize}
-\item Einfache Aufnahme mit Mikrofon neben Mund
+\item Einfache Aufnahme mit Clip-on Mikrofon neben Mund
 \item 16-bit mono mit $f_\mathrm{sampling}=8000$\,Hz
 \item Insgesamt drei Aufnahmen
 \item Alle Aufnahmen nur stimmloses ''s'' Ger"ausch mit oder ohne Lispeln
 \end{itemize}
-\end{exampleblock}
-\begin{block}{Code}
-\url{https://github.com/munnich/lateral-lisp}
-\end{block}
+\end{frame}
+
+\subsection{Vergleich}
+
+\begin{frame}
+\frametitle{Vergleich von FFTs}
+\begin{figure}
+\includegraphics[scale=0.5]{../output/normal_vs_lisp_clip_3.pdf}
+\caption{Beispielsweiser Vergleich der FFTs vom normalen ''s'' und SL.}
+\end{figure}
+\end{frame}
+
+\subsection{Analyse}
+
+\begin{frame}
+\frametitle{Feststellungen bei Vergleich von FFTs}
+\begin{itemize}
+\item[$\Rightarrow$] Bei allen drei Aufnahmen offensichtlich viel mehr im h"oheren Frequenzbereich (ca.\ 1200-3500\,Hz)
+\item[$\Rightarrow$] Ansatz: man sollte durch Vergleich der h"oheren Frequenzen zwischen normalen ''s'' und SL unterscheiden k"onnen
+\end{itemize}
 \end{frame}
 
 \begin{frame}
-\frametitle{Erl"autering des Codes}
+\frametitle{Codediagramm}
 \begin{figure}
 \scalebox{0.5}{
 \begin{tikzpicture}
@@ -108,44 +124,51 @@ line/.style={->,>=latex'}
 \draw[line] (findmax.west) -- (thresh.east);
 \end{tikzpicture}
 }
-\caption{Funktionsweise des derzeitigen Codes zur Identifizierung des Sigmatismus Lateralis in Aufnahmen}
+\caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen durch Vergleich der Aufnahmen}
 \end{figure}
 \end{frame}
 
-\subsection{Vergleich}
+\begin{frame}
+\frametitle{Ergebnisse}
+\begin{exampleblock}{Einfache Parameter}
+Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s'' Ger"auschen differenzieren und den SL sowohl identifizieren als auch verifizieren.
+\end{exampleblock}
+
+\begin{block}{Implementierung in Julia}
+\url{https://github.com/munnich/lateral-lisp}
+\end{block}
+\end{frame}
+
+\subsection{Einf\"uhrung anderer Parameter}
 
 \begin{frame}
-\frametitle{Vergleich von FFTs 1}
+\frametitle{Vergleich mit \textit{AT2020USB+} Mikrophon}
+\begin{minipage}{.5\textwidth}
 \begin{figure}
-\includegraphics[scale=0.6]{../output/normal_vs_lisp_1.pdf}
-\caption{Vergleich der FFTs vom normalen ''s'' und Sigmatismus Lateralis bei erster Aufnahme.}
+\adjincludegraphics[scale=0.5, trim={{.52\width} 0 0 0}, clip]{../output/normal_vs_lisp_at_1.pdf}
+\caption{Beispielsweiser Vergleich mit \textit{AT2020USB+}.}
 \end{figure}
-\end{frame}
-
-\begin{frame}
-\frametitle{Vergleich von FFTs 2}
-\begin{figure}
-\includegraphics[scale=0.6]{../output/normal_vs_lisp_2.pdf}
-\caption{Vergleich der FFTs vom normalen ''s'' und Sigmatismus Lateralis bei zweiter Aufnahme.}
-\end{figure}
-\end{frame}
-
-\begin{frame}
-\frametitle{Vergleich von FFTs 3}
-\begin{figure}
-\includegraphics[scale=0.6]{../output/normal_vs_lisp_2.pdf}
-\caption{Vergleich der FFTs vom normalen ''s'' und Sigmatismus Lateralis beidritter Aufnahme.}
-\end{figure}
-\end{frame}
-
-\subsection{Feststellungen}
-
-\begin{frame}
-\frametitle{Feststellungen bei Vergleich von FFTs}
+\end{minipage}
+\begin{minipage}{.4\textwidth}
 \begin{itemize}
-\item[$\Rightarrow$] Bei allen drei Aufnahmen offensichtlich viel mehr im h"oheren Frequenzbereich (ca.\ 1200-3500\,Hz)
-\item[$\Rightarrow$] Ansatz: man sollte durch Vergleich der h"oheren Frequenzen zwischen normalen ''s'' und Sigmatismus Lateralis unterscheiden k"onnen
+\item Bereich bei SL st"arker ausgepr"agt
+\item Identifizierung erfolgreich
+\item Verifizierung scheitert
 \end{itemize}
+\end{minipage}
+\end{frame}
+
+\section{Plan}
+
+\begin{frame}
+	\frametitle{Plan}
+	\begin{enumerate}
+		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
+		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und "Uberpr"ufung der bisherigen Methode \checkmark
+		\item Methode des Skripts von Prof.\ Dederichs ausprobieren
+		\item Identifizierung (in)korrekten ''s'' ohne Referenz-''s'', z.B.\ durch einfache Analyse der Durchschnittsamplitude im Frequenzbereich
+		\item Idealerweise: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
+	\end{enumerate}
 \end{frame}
 
 \section{Formanten}
@@ -160,18 +183,6 @@ Screenshots w"aren hier leider zu gro"s
 \item[$\Rightarrow$] Schien konsistent "uber alle Aufnahmen
 \end{enumerate}
 \end{block}
-\end{frame}
-
-\section{Plan}
-
-\begin{frame}
-	\frametitle{Plan}
-	\begin{enumerate}
-		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und "Uberpr"ufung der bisherigen Methode
-		\item Identifizierung (in)korrekten ''s'' ohne Referenz-''s'', z.B.\ durch einfache Analyse der Durchschnittsamplitude im Frequenzbereich
-		\item Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
-	\end{enumerate}
 \end{frame}
 
 \end{document}
