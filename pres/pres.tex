@@ -61,10 +61,10 @@ line/.style={->,>=latex'}
 
 \section{Vergleich von FFTs}
 
-\subsection{Vergleichsparameter}
+\subsection{Parameter}
 
 \begin{frame}
-\frametitle{Vergleichsparameter}
+\frametitle{Parameter}
 \begin{itemize}
 \item Einfache Aufnahme mit Clip-on Mikrofon neben Mund
 \item 16-bit mono mit $f_\mathrm{sampling}=8000$\,Hz
@@ -88,8 +88,8 @@ line/.style={->,>=latex'}
 \begin{frame}
 \frametitle{Feststellungen bei Vergleich von FFTs}
 \begin{itemize}
-\item[$\Rightarrow$] Bei allen drei Aufnahmen offensichtlich viel mehr im h"oheren Frequenzbereich (ca.\ 1200-3500\,Hz)
-\item[$\Rightarrow$] Ansatz: man sollte durch Vergleich der h"oheren Frequenzen zwischen normalen ''s'' und SL unterscheiden k"onnen
+\item Bei allen drei Aufnahmen offensichtlich viel mehr im h"oheren Frequenzbereich (ca.\ 1200-3500\,Hz)
+\item Ansatz: man sollte durch Vergleich der h"oheren Frequenzen zwischen normalen ''s'' und SL unterscheiden k"onnen
 \end{itemize}
 \end{frame}
 
@@ -104,24 +104,24 @@ line/.style={->,>=latex'}
 \node[block]	(subtraction)	[below right=0.2cm and 2cm of read]			{Subtraktion des \\ Mittelwerts};
 \node[block]	(normalizesub)	[right=of subtraction]						{Normalisierung};
 \node[block]	(absfft)			[right=of normalizesub]						{Absolutwerte \\ FFT};
-\node[block]	(slice)			[below right=1cm and 2cm of absfft]			{Begrenzung auf \\ bestimmte Frequenzen};
-\node[block]	(plot)			[above=4.5cm of slice]					{Plotten};
+\node[block]	(slice)			[below right=1cm and 2cm of absfft]			{Begrenzung auf \\ Frequenzband};
+\node[block]	(plot)			[above=4.5cm of slice]						{Plotten};
 \node[block]	(normalizefft)	[left=of slice]								{Normalisierung};
-\node[block]	(mean)			[left=of normalizefft]						{Mittelwerte \\ berechnen};
+\node[block]	(mean)			[left=of normalizefft]						{Mittelwerte  \\ berechnen};
 \node[block]	(findmax)		[left=of mean]								{Maximalwert \\ finden};
 \node[block]	(thresh)			[left=of findmax]							{Verifizierung durch \\ Referenzwerte};
 
-\draw[line] (read.north) |- (parameters.west);
-\draw[line] (read.south) |- (subtraction.west);
-\draw[line] (subtraction.east) -- (normalizesub.west);
-\draw[line] (normalizesub.east) -- (absfft.west);
-\draw[line] (absfft.east) -| (plot.south);
-\draw[line] (absfft.east) -| (slice.north);
-\draw[line] (parameters.east) -- (plot.west);
-\draw[line] (slice.west) -- (normalizefft.east);
-\draw[line] (normalizefft.west) -- (mean.east);
-\draw[line] (mean.west) -- (findmax.east);
-\draw[line] (findmax.west) -- (thresh.east);
+\draw[line] 	(read.north) 		|- 	(parameters.west);
+\draw[line] 	(read.south) 		|- 	(subtraction.west);
+\draw[line]	(subtraction.east) 	--	(normalizesub.west);
+\draw[line] 	(normalizesub.east) 	--	(absfft.west);
+\draw[line] 	(absfft.east) 		-|	(plot.south);
+\draw[line] 	(absfft.east) 		-|	(slice.north);
+\draw[line] 	(parameters.east)	--	(plot.west);
+\draw[line] 	(slice.west)			--	(normalizefft.east);
+\draw[line] 	(normalizefft.west) 	-- 	(mean.east);
+\draw[line] 	(mean.west) 			-- 	(findmax.east);
+\draw[line] 	(findmax.west) 		-- 	(thresh.east);
 \end{tikzpicture}
 }
 \caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen durch Vergleich der Aufnahmen}
@@ -152,10 +152,20 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 \begin{minipage}{.4\textwidth}
 \begin{itemize}
 \item Bereich bei SL st"arker ausgepr"agt
-\item Identifizierung erfolgreich
-\item Verifizierung scheitert
+\item Identifizierung erfolgt
+\item \( \hat{F}_\mathrm{AT} \ll \hat{F}_\mathrm{Clip} \) im Band
+\item[$\Rightarrow$] Verifizierung scheitert
 \end{itemize}
 \end{minipage}
+\end{frame}
+
+\begin{frame}
+\frametitle{M"ogliche Anpassungen}
+\begin{itemize}
+\item Adaptive Referenzwerte
+\item Nur Frequenzband normalisieren
+\item Alternativ: Hochpass vor Normalisierung
+\end{itemize}
 \end{frame}
 
 \section{Plan}
@@ -164,8 +174,7 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 	\frametitle{Plan}
 	\begin{enumerate}
 		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und "Uberpr"ufung der bisherigen Methode \checkmark
-		\item Methode des Skripts von Prof.\ Dederichs ausprobieren
+		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und Anpassung der bisherigen Methode
 		\item Identifizierung (in)korrekten ''s'' ohne Referenz-''s'', z.B.\ durch einfache Analyse der Durchschnittsamplitude im Frequenzbereich
 		\item Idealerweise: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
 	\end{enumerate}
