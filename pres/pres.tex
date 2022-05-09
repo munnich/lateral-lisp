@@ -48,8 +48,25 @@ line/.style={->,>=latex'}
 \begin{frame}
 \frametitle{Sigmatismus Lateralis}
 \begin{figure}
-\includegraphics[scale=0.4]{lateral_lisp.png}
-\caption{Sigmatismus Lateralis (SL) verglichen mit normalem ''s''. (\url{https://www.pinterest.com/pin/7248049373293660/})}
+%\includegraphics[scale=0.4]{lateral_lisp.png}
+\begin{tikzpicture}[baseline=(current bounding box.north)]
+\begin{scope}
+    \clip (-2,0) rectangle (2,2);
+    \draw (0,0) circle(2);
+    \draw (-2,0) -- (2,0);
+\end{scope}
+\draw[line] (0,0) -> (0,3);
+\begin{scope}
+    \clip (3,0) rectangle (7,2);
+    \draw (5,0) circle(2);
+    \draw (3,0) -- (7,0);
+\end{scope}
+\draw[line] (5,0) -> (7,3);
+\draw[line] (5,0) -> (3,3);
+\node[below= 1mm of {(0,0)}] {Normales S};
+\node[below= 1mm of {(5,0)}] {Sigmatismus Lateralis};
+\end{tikzpicture}
+\caption{Luftausbreitung von normalem ''s'' (S) und Sigmatismus Lateralis (SL).}% (\url{https://www.pinterest.com/pin/7248049373293660/})}
 \end{figure}
 \end{frame}
 
@@ -79,7 +96,7 @@ line/.style={->,>=latex'}
 \frametitle{Vergleich von FFTs}
 \begin{figure}
 \includegraphics[scale=0.5]{../output/normal_vs_lisp_clip_3.pdf}
-\caption{Beispielsweiser Vergleich der FFTs vom normalen ''s'' und SL.}
+\caption{Beispielsweiser Vergleich der FFTs von S und SL.}
 \end{figure}
 \end{frame}
 
@@ -88,8 +105,8 @@ line/.style={->,>=latex'}
 \begin{frame}
 \frametitle{Feststellungen bei Vergleich von FFTs}
 \begin{itemize}
-\item Bei allen drei Aufnahmen offensichtlich viel mehr im h"oheren Frequenzbereich (ca.\ 1200-3500\,Hz)
-\item Ansatz: man sollte durch Vergleich der h"oheren Frequenzen zwischen normalen ''s'' und SL unterscheiden k"onnen
+\item Bei allen drei Aufnahmen offensichtliche relative Erh"ohung im Bereich von ca.\ 1200-3500\,Hz bei SL
+\item Ansatz: man sollte durch Vergleich dieses Frequenzbands zwischen S und SL unterscheiden k"onnen
 \end{itemize}
 \end{frame}
 
@@ -162,9 +179,8 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 \begin{frame}
 \frametitle{M"ogliche Anpassungen}
 \begin{itemize}
-\item Adaptive Referenzwerte
-\item Nur Frequenzband normalisieren
-\item Alternativ: Hochpass vor Normalisierung
+\item Adaptive Referenzwerte \\ $\Rightarrow$ Filter vor Normalisierung
+\item Identifizierung durch Vergleich von Frequenzbereichen \\ $\Rightarrow$ z.B.\ 2000-2500\,Hz und 3000-3500\,Hz
 \end{itemize}
 \end{frame}
 
@@ -173,25 +189,25 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 \begin{frame}
 	\frametitle{Plan}
 	\begin{enumerate}
-		\item Identifizierung des korrekten ''s'' durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, Position, Maske etc.\ und Anpassung der bisherigen Methode
-		\item Identifizierung (in)korrekten ''s'' ohne Referenz-''s'', z.B.\ durch einfache Analyse der Durchschnittsamplitude im Frequenzbereich
+		\item Identifizierung SL durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
+		\item[\textcolor{purple}{2.}] Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, L"ange, Lautst"arke etc.\ und Anpassung der bisherigen Methode
+		\item Identifizierung SL ohne Referenz-S
 		\item Idealerweise: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
 	\end{enumerate}
 \end{frame}
-
-\section{Formanten}
-
-\begin{frame}
-\frametitle{Betrachtung der Formanten mit Praat}
-Screenshots w"aren hier leider zu gro"s
-\begin{block}{Ergebnisse}
-\begin{enumerate}
-\item Formant normal zwischen 700-800, Lispeln 500-700
-\item Formant normal zwischen 1500-2000, Lispeln 1800-2200
-\item[$\Rightarrow$] Schien konsistent "uber alle Aufnahmen
-\end{enumerate}
-\end{block}
-\end{frame}
+%
+%\section{Formanten}
+%
+%\begin{frame}
+%\frametitle{Betrachtung der Formanten mit Praat}
+%Screenshots w"aren hier leider zu gro"s
+%\begin{block}{Ergebnisse}
+%\begin{enumerate}
+%\item Formant normal zwischen 700-800, Lispeln 500-700
+%\item Formant normal zwischen 1500-2000, Lispeln 1800-2200
+%\item[$\Rightarrow$] Schien konsistent "uber alle Aufnahmen
+%\end{enumerate}
+%\end{block}
+%\end{frame}
 
 \end{document}
