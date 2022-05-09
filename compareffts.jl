@@ -1,7 +1,7 @@
 using Plots, FFTW, WAV, Statistics, ArgParse, LinearAlgebra
 
 function parse()
-    s = ArgParseSettings()
+    s = ArgParseSettings(description="Identify lisps in WAV recordings.")
     @add_arg_table s begin
         "folder_a"
         help = "First data folder. Folder name will be re-used for titles."
@@ -68,28 +68,20 @@ struct FFTResult
     fftmagnitude::Array{Float64}
 end
 
-# for reasons unbeknown to me this seems to use more memory than the array one
-# I don't want to delete it until I truly understand how this is the case
-function getfft(fname::String)
-    title = replace(fname, "/" => ": ")
-    title = replace(title, ".wav" => "")
-    title = replace(title, "_" => " ")
-    title = uppercasefirst(title)
+"""
+    getfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
 
-    wavdata = wavread(fname)
-    audio = wavdata[1]
-    fs::Int = wavdata[2]
-    # subtract mean
-    audiomean = mean(audio)
-    audio = audio .- audiomean
-    normalize!(audio)
+Read and prepare input WAV file.
+This cuts audio from samplestart until sampleend, subtracts mean, then 
+normalizes.
+Afterwards, the FFT is calculated and the absolute is saved.
 
-    fftdata = fft(audio)
-    fftmagnitude = abs.(fftdata)
-
-    FFTResult(title, audio, fs, fftmagnitude)
-end
-
+The result is an FFTResult struct containing:
+* `title::String`
+* `waveform::Array{Float64}`
+* `fs::Integer`
+* `fftmagnitude::Array{Float64}`
+"""
 function getfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
     numfiles = length(fnames)
     results = Array{FFTResult}(undef, numfiles)
@@ -136,6 +128,23 @@ struct SliceResult
     allmeans::Array{Float64}
 end
 
+"""
+    examineslice(input::Array{FFTResult}, slice::StepRange{Int64, Int64})
+
+Examine a slice by comparing FFT magnitude spectrums to identify lisps.
+Only one lisp is detected, so this algorithm just finds the recording most likely 
+to be a lisp.
+This is done by normalizing the slice and finding the larger mean, which is
+assumed to be the lisp.
+For reference, the values are compared to magic numbers that are based on one set
+of samples and should be taken with a giant hand of salt.
+
+The result is a SliceResult struct containing:
+* `title::String`
+* `mean::Float64`
+* `likely::Bool`
+* `allmeans::Array{Float64}`
+"""
 function examineslice(input::Array{FFTResult}, slice::StepRange{Int64, Int64})
     # cut out a slice and compare FFTs
     # we use mean of the sliced normalized FFT magnitude to identify the lisp
@@ -145,7 +154,7 @@ function examineslice(input::Array{FFTResult}, slice::StepRange{Int64, Int64})
     # check if our max indeed has a mean in [0.0075, 0.0080] (magic number)
     checkthresh = slicemax[1] > 0.0075 && slicemax[1] < 0.0080
 
-    return LispResult(input[slicemax[2]].title, slicemax[1], checkthresh, slicedfftmean)
+    return SliceResult(input[slicemax[2]].title, slicemax[1], checkthresh, slicedfftmean)
 end
 
 # I'd prefer one result struct but slice and end print different info
@@ -156,34 +165,50 @@ struct EndResult
     diff::Float64
 end
 
-# this works reference-free
 # since the original script here is for comparing this doesn't make sense
 # hence this should probably be moved into its own script
-function examineend(input::Array{FFTResult})
-    output = Array{EndResult}(undef, length(input))
-    for i in 1:length(input)
-        # normalized bandpass with bounds 1000, (45% of fs) Hz
-        # for <1 s samples upper bound is 90% highest freq
-        slicedfft = normalize(input[i].fftmagnitude[1001:min(trunc(Int, input[i].fs * 0.45), trunc(Int, (end * 0.90)))])
-        # we compare the last ≈ 1000 Hz of the above band to everything until then
-        slicemeanend = mean(slicedfft[(end - 1000):end])
-        slicemeanrest = mean(slicedfft[1:(end - 1000)])
-        # mean(end) - mean(rest) > 0 => lisp
-        slicemeandiff = slicemeanend - slicemeanrest
-        if slicemeandiff > 0
-            result = "lisp"
-        else
-            result = "normal"
-        end
-        output[i] = EndResult(input[i].title, result, slicemeandiff)
+"""
+    examineend(input::FFTResult)
+
+A reference-free examination algorithm.
+It takes an FFTResult and performs a bandpass over it, then normalizes that.
+It compares the amplitudes of the last frequencies in the band to the rest of
+the band by subtraction. If the result is greater zero, a lisp is assumed.
+
+The result is an EndResult containing:
+* `title::String`
+* `result::String`
+* `diff::Float64`
+"""
+function examineend(input::FFTResult)
+    # adjustment for differing sample lengths
+    factor = length(input.waveform) / input.fs
+    low = trunc(Int, 1001 * factor)
+    high = trunc(Int, 4001 * factor)
+    # normalized bandpass
+    slicedfft = normalize(input.fftmagnitude[low:high])
+    # we compare the last couple freqs of the above band to everything until then
+    interest = trunc(Int, 1000 * factor)
+    slicemeanend = mean(slicedfft[(end - interest):end])
+    slicemeanrest = mean(slicedfft[1:(end - interest)])
+    # mean(end) - mean(rest) > 0 ⇒ lisp
+    slicemeandiff = slicemeanend - slicemeanrest
+    if slicemeandiff > 0
+        result = "lisp"
+    else
+        result = "normal"
     end
-    return output
+    return EndResult(input.title, result, slicemeandiff)
 end
 
 #=
    Main section
 =#
 
+"""
+The main function. Runs the functions with multithreading and prints results
+single-threaded with optional plotting.
+"""
 function main(args)
     println("Finished compilation, starting FFT examination...")
     # the filenames should be the same anyway so we only need to read folder_a
@@ -199,6 +224,7 @@ function main(args)
     slice = 1200:1:3500
     
     # multithreaded loop for getting and examining the ffts
+    # unfortunately the stuff we can use multithreading for isn't that slow
     Threads.@threads for i in 1:numfiles
         results[i] = getfft(["$(args["folder_a"])/$(folder_a[i])",
                              "$(args["folder_b"])/$(folder_a[i])"],
@@ -206,7 +232,13 @@ function main(args)
         if args["mode"] == "slice"
             lisps[i] = examineslice(results[i], slice)
         elseif args["mode"] == "end"
-            lisps[i] = examineend(results[i])
+            # the "end" algorithm runs on single files at a time
+            # since we're comparing files we do the grouping here
+            output = Array{EndResult}(undef, length(results[i]))
+            for j in 1:length(results[i])
+                output[j] = examineend(results[i][j])
+            end
+            lisps[i] = output
         else
             error("Unknown mode chosen; options are slice and end")
         end
@@ -218,6 +250,8 @@ function main(args)
     for i in 1:numfiles
         # plotting is so slow it deserves a flag
         if args["plot"]
+            # create the output directory if it doesn't exist yet
+            mkpath("output")
             plots = []
             for j in 1:length(results[i])
                 # normal plot
@@ -230,7 +264,8 @@ function main(args)
                 # defaulting
                 if args["fft-end"] == 0
                     # waveform length affects max frequency
-                    limit = results[i][j].fs#trunc(Int, min(results[i][j].fs / 2, length(results[i][j].waveform) / 2))
+                    # untested - but you can just manually set the fft-end
+                    limit = results[i][j].fs ^ 2 / length(results[i][j].waveform)
                 else
                     limit = args["fft-end"]
                 end
@@ -241,12 +276,18 @@ function main(args)
                                   title="FFT " * results[i][j].title,
                                   xlabel="Frequency [Hz]", ylabel="Amplitude"))
             end
+            # this combines all the above plots with 2x2 subplots
+            # also links the y-axis horizontally
+            # we only plot one line per subplot so legends are nonsense
             plot(plots..., layout=(2, 2), legend=false, link=:y)
+            # prepare the output filename
+            # with defaults and title "foo_1" we write to "output/normal_vs_lisp_foo_1.pdf"
             figname = lowercase(folder_a[i])
             figname = replace(figname, ".wav" => "")
             savefig("output/$(args["folder_a"])_vs_$(args["folder_b"])_$figname.$(args["format"])")
         end
 
+        # the lisp results differ for the two modes so they need their own prints
         if args["mode"] == "slice"
             println("$(lisps[i].title) detected as lisp with $(lisps[i].mean), " *
                     "within expected frequencies: $(lisps[i].likely), " *
