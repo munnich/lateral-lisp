@@ -86,7 +86,8 @@ line/.style={->,>=latex'}
 \item Einfache Aufnahme mit Clip-on Mikrofon neben Mund
 \item 16-bit mono mit $f_\mathrm{sampling}=8000$\,Hz
 \item Insgesamt drei Aufnahmen
-\item Alle Aufnahmen nur stimmloses ''s'' Ger"ausch mit oder ohne Lispeln
+\item Alle Aufnahmen nur stimmloses ''s'' Ger"ausch mit oder ohne Lispeln\
+\item Neu: betrachten von kleineren Fenstern, z.B.\ 1\,s
 \end{itemize}
 \end{frame}
 
@@ -105,7 +106,7 @@ line/.style={->,>=latex'}
 \begin{frame}
 \frametitle{Feststellungen bei Vergleich von FFTs}
 \begin{itemize}
-\item Bei allen drei Aufnahmen offensichtliche relative Erh"ohung im Bereich von ca.\ 1200-3500\,Hz bei SL
+\item Erh"ohung im Bereich von ca 3000-3500\,Hz bei SL, 2500-3000\,Hz bei S 
 \item Ansatz: man sollte durch Vergleich dieses Frequenzbands zwischen S und SL unterscheiden k"onnen
 \end{itemize}
 \end{frame}
@@ -124,9 +125,9 @@ line/.style={->,>=latex'}
 \node[block]	(slice)			[below right=1cm and 2cm of absfft]			{Begrenzung auf \\ Frequenzband};
 \node[block]	(plot)			[above=4.5cm of slice]						{Plotten};
 \node[block]	(normalizefft)	[left=of slice]								{Normalisierung};
-\node[block]	(mean)			[left=of normalizefft]						{Mittelwerte  \\ berechnen};
-\node[block]	(findmax)		[left=of mean]								{Maximalwert \\ finden};
-\node[block]	(thresh)			[left=of findmax]							{Verifizierung durch \\ Referenzwerte};
+\node[block]	(split)			[left=of normalizefft]						{Aufspaltung \\ Band und Rest};
+\node[block]	(mean)			[left=of split]								{Mittelwerte \\ berechnen};
+\node[block]	(thresh)			[left=of mean]							{Differenz $> 0$ \\ $\Rightarrow$ Lisp};
 
 \draw[line] 	(read.north) 		|- 	(parameters.west);
 \draw[line] 	(read.south) 		|- 	(subtraction.west);
@@ -136,19 +137,19 @@ line/.style={->,>=latex'}
 \draw[line] 	(absfft.east) 		-|	(slice.north);
 \draw[line] 	(parameters.east)	--	(plot.west);
 \draw[line] 	(slice.west)			--	(normalizefft.east);
-\draw[line] 	(normalizefft.west) 	-- 	(mean.east);
-\draw[line] 	(mean.west) 			-- 	(findmax.east);
-\draw[line] 	(findmax.west) 		-- 	(thresh.east);
+\draw[line] 	(normalizefft.west) 	-- 	(split.east);
+\draw[line] 	(split.west)			--	(mean.east);
+\draw[line] 	(mean.west) 			-- 	(thresh.east);
 \end{tikzpicture}
 }
-\caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen durch Vergleich der Aufnahmen}
+\caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen}
 \end{figure}
 \end{frame}
 
 \begin{frame}
 \frametitle{Ergebnisse}
 \begin{exampleblock}{Einfache Parameter}
-Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s'' Ger"auschen differenzieren und den SL sowohl identifizieren als auch verifizieren.
+Bei den derzeitigen einfachen Parametern kann der Code beide ''s'' Formen identifizieren.
 \end{exampleblock}
 
 \begin{block}{Implementierung in Julia}
@@ -160,28 +161,15 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 
 \begin{frame}
 \frametitle{Vergleich mit \textit{AT2020USB+} Mikrophon}
-\begin{minipage}{.5\textwidth}
 \begin{figure}
-\adjincludegraphics[scale=0.5, trim={{.52\width} 0 0 0}, clip]{../output/normal_vs_lisp_at_1.pdf}
-\caption{Beispielsweiser Vergleich mit \textit{AT2020USB+}.}
+\includegraphics[scale=0.5]{../output/normal_vs_lisp_at_1.pdf}
+\caption{Beispielsweiser Vergleich mit \textit{AT2020USB+}. Ergebnisse "ahneln den vorherigen.}
 \end{figure}
-\end{minipage}
-\begin{minipage}{.4\textwidth}
-\begin{itemize}
-\item Bereich bei SL st"arker ausgepr"agt
-\item Identifizierung erfolgt
-\item \( \hat{F}_\mathrm{AT} \ll \hat{F}_\mathrm{Clip} \) im Band
-\item[$\Rightarrow$] Verifizierung scheitert
-\end{itemize}
-\end{minipage}
 \end{frame}
 
 \begin{frame}
-\frametitle{M"ogliche Anpassungen}
-\begin{itemize}
-\item Adaptive Referenzwerte \\ $\Rightarrow$ Filter vor Normalisierung
-\item Identifizierung durch Vergleich von Frequenzbereichen \\ $\Rightarrow$ z.B.\ 2000-2500\,Hz und 3000-3500\,Hz
-\end{itemize}
+\frametitle{Fenstergr"o"se}
+Der derzeitige Algorithmus scheint bei den Aufnahmen sowohl bei L"angen von 5\,s als auch 0.5\,s die Formen korrekt zu identifizieren.
 \end{frame}
 
 \section{Plan}
@@ -190,7 +178,7 @@ Bei den derzeitigen einfachen Parametern kann der Code zwischen den beiden ''s''
 	\frametitle{Plan}
 	\begin{enumerate}
 		\item Identifizierung SL durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item[\textcolor{purple}{2.}] Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon, L"ange, Lautst"arke etc.\ und Anpassung der bisherigen Methode
+		\item[\textcolor{purple}{2.}] Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon \checkmark, L"ange \checkmark, Lautst"arke etc.\ und Anpassung der bisherigen Methode
 		\item Identifizierung SL ohne Referenz-S
 		\item Idealerweise: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
 	\end{enumerate}
