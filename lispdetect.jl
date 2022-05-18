@@ -70,20 +70,20 @@ struct FFTResult
 end
 
 """
-    getfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
+    readandgetfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
 
 Read and prepare input WAV file.
 This cuts audio from samplestart until sampleend, subtracts mean, then 
 normalizes.
 Afterwards, the FFT is calculated and the absolute is saved.
 
-The result is an FFTResult struct containing:
+The result is an array of `FFTResult` structs containing:
 * `title::String`
 * `waveform::Array{Float64}`
 * `fs::Integer`
 * `fftmagnitude::Array{Float64}`
 """
-function getfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
+function readandgetfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
     numfiles = length(fnames)
     results = Array{FFTResult}(undef, numfiles)
     audio = Matrix{Float64}[]
@@ -116,6 +116,46 @@ function getfft(fnames::Array{String}, samplestart::Int, sampleend::Int)
         results[i] = FFTResult(title, audio[i], wavdata[2], abs.(fftdata))
     end
     return results
+end
+
+"""
+    getfft(fname::String, wavdata::Tuple, samplestart::Int, sampleend::Int)
+
+Prepare audio and get FFT.
+The wavdata input should be the result from `WAV`'s `wavread`.
+This cuts audio from samplestart until sampleend, subtracts mean, then 
+normalizes.
+Afterwards, the FFT is calculated and the absolute is saved.
+
+The result is an `FFTResult` struct containing:
+* `title::String`
+* `waveform::Array{Float64}`
+* `fs::Integer`
+* `fftmagnitude::Array{Float64}`
+"""
+function getfft(fname::String, wavdata::Tuple, samplestart::Int, sampleend::Int)
+    audio = wavdata[1]
+    # subtract mean
+    audiomean = mean(audio)
+    audio = audio .- audiomean
+    # should obviously default to the full thing if unspecified
+    if sampleend == 0
+        sampleend = length(audio)
+    end
+    # slicing the audio
+    audio = audio[samplestart:1:sampleend, :]
+    # it might be worth normalizing here?
+    normalize!(audio)
+
+    title = replace(fname, "/" => ": ")
+    title = replace(title, ".wav" => "")
+    title = replace(title, "_" => " ")
+    title = uppercasefirst(title)
+
+    fftdata = fft(audio)
+
+    #                title  waveform  fs          fftmagnitude
+    return FFTResult(title, audio, wavdata[2], abs.(fftdata))
 end
 
 #=
@@ -221,7 +261,13 @@ end
    - smaller frequency band for analysis
 =#
 
-function examinetext(file::String)
+"""
+    examinetext(file::String, samplestart::Int, sampleend::Int)
+
+Examine text files for lisps based on examineend.
+Returns a boolean of whether a lisp was detected.
+"""
+function examinetext(file::String, samplestart::Int, sampleend::Int)
     wavdata = wavread(file)
     audio = wavdata[1]
     fs = wavdata[2]
@@ -232,15 +278,40 @@ function examinetext(file::String)
     segmentlength = fs / 2
 
     # filter silent segments
-    segments = []
+    segments = Array{FFTResult}
     for i in 1:segmentlength:(length(audio) - segmentlength)
         slice = audio[i:(i + segmentlength)]
+        # all segments with mean under audiomean are assumed silent
         if mean(slice) > audiomean
-            segments = cat(1, segments, slice)
+            segments = cat(1, segments, getfft(fname, (slice, fs), samplestart, sampleend))
         end
     end
 
+    # verbosity - this should be removed if the current algorithm works
     println("$file: $(length(segments)) / $(length(audio)) non-silent")
+
+    #=
+    # this is where this no longer makes much sense - we need to identify
+    # whether the segment should even have a lispable sound
+    # need to do research into how to do this
+    #
+    # possible methods:
+    # >formants
+    # >use the same method as examineend
+    # >fit some distribution to FFT magnitude of different sounds
+    # >worst case scenario: machine learning
+    =#
+
+    # run through the segments and count the detected lisps and non-lisps
+    hits = 0
+    misses = 0
+    for segment in segments
+        num += Int(examineend(segment).result) * 2 - 1
+    end
+
+    # return true if lisp is detected off the assumption that
+    # hits > misses ⇒ lisp ∧ hits < misses ⇒ ¬lisp
+    return hits > misses
 end
 
 #=
@@ -268,7 +339,7 @@ function main(args)
     # multithreaded loop for getting and examining the ffts
     # unfortunately the stuff we can use multithreading for isn't that slow
     Threads.@threads for i in 1:numfiles
-        results[i] = getfft(["$(args["folder_a"])/$(folder_a[i])",
+        results[i] = readandgetfft(["$(args["folder_a"])/$(folder_a[i])",
                              "$(args["folder_b"])/$(folder_a[i])"],
                             args["sample-start"], args["sample-end"])
         if args["mode"] == "slice"
