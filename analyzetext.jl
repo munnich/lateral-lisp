@@ -1,5 +1,6 @@
 using Plots, FFTW, WAV, Statistics, ArgParse, LinearAlgebra
 
+
 function parse()
     s = ArgParseSettings(description="Identify lisps in WAV recordings.")
     @add_arg_table s begin
@@ -202,6 +203,47 @@ function examineend(input::FFTResult)
 end
 
 #=
+   Full text analysis
+
+   our first task after having figured out examineend seems to work well enough
+   is to analyze a full text by counting the number of lisps vs normals
+
+   concept:
+   >load file
+   >save mean
+   >split into segments
+    >overlapping?
+   >if mean < full text mean: assume silence
+   >test non-silent segments for lisp
+   
+   ideas:
+   - overlapping segments?
+   - smaller frequency band for analysis
+=#
+
+function examinetext(file::String)
+    wavdata = wavread(file)
+    audio = wavdata[1]
+    fs = wavdata[2]
+
+    audiomean = mean(audio)
+
+    # length of 0.5 s => segment length is fs / 2 s
+    segmentlength = fs / 2
+
+    # filter silent segments
+    segments = []
+    for i in 1:segmentlength:(length(audio) - segmentlength)
+        slice = audio[i:(i + segmentlength)]
+        if mean(slice) > audiomean
+            segments = cat(1, segments, slice)
+        end
+    end
+
+    println("$file: $(length(segments)) / $(length(audio)) non-silent")
+end
+
+#=
    Main section
 =#
 
@@ -302,4 +344,4 @@ function main(args)
     println("Finished.")
 end
 
-@time main(parse())
+main(parse())
