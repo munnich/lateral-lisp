@@ -29,12 +29,10 @@ struct FFTResult
 end
 
 """
-    getfft(fname::String, wavdata::Tuple, samplestart::Int, sampleend::Int)
+    getfft(fname::String, wavdata::Tuple)
 
 Prepare audio and get FFT.
 The wavdata input should be the result from `WAV`'s `wavread`.
-This cuts audio from samplestart until sampleend, subtracts mean, then 
-normalizes.
 Afterwards, the FFT is calculated and the absolute is saved.
 
 The result is an `FFTResult` struct containing:
@@ -43,17 +41,12 @@ The result is an `FFTResult` struct containing:
 * `fs::Integer`
 * `fftmagnitude::Array{Float64}`
 """
-function getfft(fname::String, wavdata::Tuple, samplestart::Int, sampleend::Int)
+function getfft(fname::String, wavdata::Tuple)
     audio = wavdata[1]
     # subtract mean
     audiomean = mean(audio)
     audio = audio .- audiomean
-    # should obviously default to the full thing if unspecified
-    if sampleend == 0
-        sampleend = length(audio)
-    end
-    # slicing the audio
-    audio = audio[samplestart:1:sampleend, :]
+
     # it might be worth normalizing here?
     normalize!(audio)
 
@@ -70,7 +63,7 @@ end
 
 struct EndResult
     title::String
-    result::String
+    result::Bool
     diff::Float64
 end
 
@@ -84,7 +77,7 @@ the band by subtraction. If the result is greater zero, a lisp is assumed.
 
 The result is an EndResult containing:
 * `title::String`
-* `result::String`
+* `result::Bool`
 * `diff::Float64`
 """
 function examineend(input::FFTResult)
@@ -100,11 +93,7 @@ function examineend(input::FFTResult)
     slicemeanrest = mean(slicedfft[1:(end - interest)])
     # mean(end) - mean(rest) > 0 ⇒ lisp
     slicemeandiff = slicemeanend - slicemeanrest
-    if slicemeandiff > 0
-        result = "lisp"
-    else
-        result = "normal"
-    end
+    result = slicemeandiff > 0
     return EndResult(input.title, result, slicemeandiff)
 end
 
@@ -135,7 +124,7 @@ struct TextResult
 end
 
 """
-    examinetext(file::String, samplestart::Int, sampleend::Int)
+    examinetext(file::String)
 
 Examine text files for lisps based on examineend.
 The result is a TextResult containing:
@@ -144,25 +133,27 @@ The result is a TextResult containing:
 * `hits::Int`
 * `misses::Int`
 """
-function examinetext(file::String, samplestart::Int, sampleend::Int)
+function examinetext(file::String)
     wavdata = wavread(file)
     audio = wavdata[1]
     fs = wavdata[2]
 
     audiomean = mean(audio)
 
-    # length of 0.5 s => segment length is fs / 2 s
-    segmentlength = fs / 2
+    # determine segment length based on sampling frequency
+    segmentlength = trunc(Int, fs / 2)
 
     # filter silent segments
-    segments = Array{FFTResult}
+    segments = []
     for i in 1:segmentlength:(length(audio) - segmentlength)
         slice = audio[i:(i + segmentlength)]
         # all segments with mean under audiomean are assumed silent
-        if mean(slice) > audiomean
-            segments = cat(1, segments,
-                           getfft(fname, (slice, fs), samplestart, sampleend))
+        #=
+        if mean(slice) > (audiomean * 10)
+            push!(segments, getfft(file, (slice, fs)))
         end
+        =#
+        push!(segments, getfft(file, (slice, fs)))
     end
 
     # verbosity - this should be removed if the current algorithm works
@@ -184,7 +175,11 @@ function examinetext(file::String, samplestart::Int, sampleend::Int)
     hits = 0
     misses = 0
     for segment in segments
-        num += Int(examineend(segment).result) * 2 - 1
+        if examineend(segment).result
+            hits += 1
+        else
+            misses += 1
+        end
     end
 
     # verbosity - this should be removed if the current algorithm works
@@ -210,20 +205,16 @@ function main(args)
 
     results = Array{TextResult}(undef, numfiles)
 
-    # the slice of frequencies we want to analyze
-    # it feels ridiculous to hardcode this but that makes more sense to me
-    slice = 1200:1:3500
-    
     # multithreaded loop for getting and examining the ffts
     # unfortunately the stuff we can use multithreading for isn't that slow
     Threads.@threads for i in 1:numfiles
-        results[i] = examinetext(results[i][j])
+        results[i] = examinetext("$(args["folder"])/$(folder[i])")
     end
 
     println("Finished analysis:")
     # singlethreaded for printing
     for i in 1:numfiles
-        println("$(results[i].title) is lisp: $(results[i].result) " *
+        println("$(results[i].title) is lisp: $(results[i].result), " *
                 "with $(results[i].hits) hits, $(results[i].misses) misses")
     end
     println("Finished.")
