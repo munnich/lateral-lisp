@@ -138,22 +138,19 @@ function examinetext(file::String)
     audio = wavdata[1]
     fs = wavdata[2]
 
-    audiomean = mean(audio)
+    audiomean = mean(abs.(audio))
 
     # determine segment length based on sampling frequency
-    segmentlength = trunc(Int, fs / 2)
+    segmentlength = trunc(Int, fs / 4)
 
     # filter silent segments
     segments = []
     for i in 1:segmentlength:(length(audio) - segmentlength)
         slice = audio[i:(i + segmentlength)]
         # all segments with mean under audiomean are assumed silent
-        #=
-        if mean(slice) > (audiomean * 10)
+        if mean(abs.(slice)) > audiomean
             push!(segments, getfft(file, (slice, fs)))
         end
-        =#
-        push!(segments, getfft(file, (slice, fs)))
     end
 
     # verbosity - this should be removed if the current algorithm works
