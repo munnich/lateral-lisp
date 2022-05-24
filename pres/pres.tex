@@ -143,7 +143,7 @@ line/.style={->,>=latex'}
 \end{tikzpicture}
 }
 \caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen}
-\end{figure}
+\end{figure}\label{examineend}
 \end{frame}
 
 \begin{frame}
@@ -172,15 +172,45 @@ Bei den derzeitigen einfachen Parametern kann der Code beide ''s'' Formen identi
 Der derzeitige Algorithmus scheint bei den Aufnahmen sowohl bei L"angen von 5\,s als auch 0.5\,s die Formen korrekt zu identifizieren.
 \end{frame}
 
+\section{Ganze Texte}
+
+\begin{frame}
+\frametitle{Code}
+\begin{exampleblock}{"Ubersetzung auf Texte}
+Audiodatei in Segmente aufspalten, Algorithmus aus \ref{examineend} anwenden und Anzahl Treffer z"ahlen.
+\end{exampleblock}
+\begin{alertblock}{Problem}
+Wie werden interessante Segmente ausgesucht?
+\end{alertblock}
+\end{frame}
+
+\begin{frame}
+\frametitle{Potenzielle L"osungen}
+\begin{itemize}
+\item Durchschnittsamplituden Vergleichen: Segment \(>\) ganze Datei
+\item[$\Rightarrow$] Rausfiltern von leisen Segmenten
+\item Fit an Referenz-S und -SL Distributionen, Standardabweichung zur Bestimmung nutzen
+\item Algorithmus aus \ref{examineend} um"andern, sodass auch zwischen S/SL und anderen Ger"auschen unterschieden werden kann
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{Zwischenergebnisse}
+\begin{itemize}
+\item Durchschnittsamplitudeverfahren probiert, aber noch nicht Fehlerfrei umgesetzt
+\item Es werden tendenziell mehr SL bei Text mit SL identifiziert, aber noch nicht zuverl"assig genug
+\end{itemize}
+\end{frame}
+
 \section{Plan}
 
 \begin{frame}
 	\frametitle{Plan}
 	\begin{enumerate}
 		\item Identifizierung SL durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item[\textcolor{purple}{2.}] Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon \checkmark, L"ange \checkmark, Lautst"arke etc.\ und Anpassung der bisherigen Methode
-		\item Identifizierung SL ohne Referenz-S
-		\item Idealerweise: Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
+		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon \checkmark, L"ange \checkmark, Lautst"arke etc.\ und Anpassung der bisherigen Methode
+		\item Identifizierung SL ohne Referenz-S \checkmark
+		\item[\textcolor{purple}{2.}] Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
 	\end{enumerate}
 \end{frame}
 %
