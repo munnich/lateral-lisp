@@ -61,60 +61,48 @@ function getfft(fname::String, wavdata::Tuple)
     return FFTResult(title, audio, wavdata[2], abs.(fftdata))
 end
 
-struct EndResult
+struct SegmentResult
     title::String
     result::Bool
     diff::Float64
 end
 
 """
-    examineend(input::FFTResult)
+    examinesegment(input::FFTResult, segment::Tuple{Int64, Int64})
 
 A reference-free examination algorithm.
 It takes an FFTResult and performs a bandpass over it, then normalizes that.
-It compares the amplitudes of the last frequencies in the band to the rest of
+It compares the amplitudes of the specified frequencies in the band to the rest of
 the band by subtraction. If the result is greater zero, a lisp is assumed.
 
-The result is an EndResult containing:
+The result is an SegmentResult containing:
 * `title::String`
 * `result::Bool`
 * `diff::Float64`
 """
-function examineend(input::FFTResult)
+function examinesegment(input::FFTResult, segment::Tuple{Int64, Int64})
     # adjustment for differing sample lengths
     factor = length(input.waveform) / input.fs
     low = trunc(Int, 1001 * factor)
     high = trunc(Int, 4001 * factor)
     # normalized bandpass
     slicedfft = normalize(input.fftmagnitude[low:high])
-    # we compare the last couple freqs of the above band to everything until then
-    interest = trunc(Int, 1000 * factor)
-    slicemeanend = mean(slicedfft[(end - interest):end])
-    slicemeanrest = mean(slicedfft[1:(end - interest)])
+    # scale the segment
+    scaledsegment = [trunc(Int, (s - 1000) * factor) for s in segment]
+    slicemean = mean(slicedfft[scaledsegment[1]:scaledsegment[2]])
+    if segment[2] == length(slicedfft)
+        slicemeanrest = mean(slicedfft[1:scaledsegment[1]])
+    elseif segment[1] == 1
+        slicemeanrest = mean(slicedfft[scaledsegment[2]:end])
+    else
+        slicemeanrest = mean(vcat(slicedfft[1:scaledsegment[1]],
+                                  slicedfft[scaledsegment[2]:end]))
+    end
     # mean(end) - mean(rest) > 0 ⇒ lisp
-    slicemeandiff = slicemeanend - slicemeanrest
+    slicemeandiff = slicemean - slicemeanrest
     result = slicemeandiff > 0
-    return EndResult(input.title, result, slicemeandiff)
+    return SegmentResult(input.title, result, slicemeandiff)
 end
-
-#=
-   Full text analysis
-
-   our first task after having figured out examineend seems to work well enough
-   is to analyze a full text by counting the number of lisps vs normals
-
-   concept:
-   >load file
-   >save mean
-   >split into segments
-    >overlapping?
-   >if mean < full text mean: assume silence
-   >test non-silent segments for lisp
-   
-   ideas:
-   - overlapping segments?
-   - smaller frequency band for analysis
-=#
 
 struct TextResult
     title::String
@@ -126,7 +114,9 @@ end
 """
     examinetext(file::String)
 
-Examine text files for lisps based on examineend.
+Examine text files for lisps based on examinesegment.
+Just counts the number of lisps vs. non-lisps detected and compares.
+
 The result is a TextResult containing:
 * `title::String`
 * `result::Bool`
@@ -156,25 +146,15 @@ function examinetext(file::String)
     # verbosity - this should be removed if the current algorithm works
     println("$file: $(length(segments)) / $(length(audio)) non-silent")
 
-    #=
-    # this is where this no longer makes much sense - we need to identify
-    # whether the segment should even have a lispable sound
-    # need to do research into how to do this
-    #
-    # possible methods:
-    # >formants
-    # >use the same method as examineend
-    # >fit some distribution to FFT magnitude of S and SL
-    # >worst case scenario: machine learning
-    =#
-
     # run through the segments and count the detected lisps and non-lisps
     hits = 0
     misses = 0
     for segment in segments
-        if examineend(segment).result
+        # [3000, 4000] Hz seems to be the lisp
+        if examinesegment(segment, (3000, 4000)).result
             hits += 1
-        else
+        # [2500, 3000] Hz works well enough for the normal s
+        elseif examinesegment(segment, (2500, 3000)).result
             misses += 1
         end
     end
