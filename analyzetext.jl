@@ -131,7 +131,7 @@ function examinetext(file::String)
     audiomean = mean(abs.(audio))
 
     # determine segment length based on sampling frequency
-    segmentlength = trunc(Int, fs / 4)
+    segmentlength = trunc(Int, fs / 2)
 
     # filter silent segments
     segments = []
