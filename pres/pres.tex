@@ -143,7 +143,7 @@ line/.style={->,>=latex'}
 \end{tikzpicture}
 }
 \caption{Funktionsweise des derzeitigen Codes zur Identifizierung des SL in Aufnahmen}
-\end{figure}\label{examineend}
+\end{figure}\label{examinesegment}
 \end{frame}
 
 \begin{frame}
@@ -175,43 +175,33 @@ Der derzeitige Algorithmus scheint bei den Aufnahmen sowohl bei L"angen von 5\,s
 \section{Ganze Texte}
 
 \begin{frame}
-\frametitle{Code}
-\begin{exampleblock}{"Ubersetzung auf Texte}
-Audiodatei in Segmente aufspalten, Algorithmus aus \ref{examineend} anwenden und Anzahl Treffer z"ahlen.
-\end{exampleblock}
-\begin{alertblock}{Problem}
-Wie werden interessante Segmente ausgesucht?
-\end{alertblock}
+\frametitle{Ganze Texte}
+\begin{enumerate}
+\item Audiodatei in Segmente aufspalten
+\item Algorithmus aus \ref{examinesegment} mit
+\begin{align*}
+F_\mathrm{S} &= [2500, 3000]\,\mathrm{Hz} & F_\mathrm{SL} &= [3000, 4000]\,\mathrm{Hz}
+\end{align*}
+\item Bestimmung Anzahl SL > Anzahl S
+\end{enumerate}
 \end{frame}
 
 \begin{frame}
-\frametitle{Potenzielle L"osungen}
-\begin{itemize}
-\item Durchschnittsamplituden Vergleichen: Segment \(>\) ganze Datei
-\item[$\Rightarrow$] Rausfiltern von leisen Segmenten
-\item Fit an Referenz-S und -SL Distributionen, Standardabweichung zur Bestimmung nutzen
-\item Algorithmus aus \ref{examineend} um"andern, sodass auch zwischen S/SL und anderen Ger"auschen unterschieden werden kann
-\end{itemize}
+\frametitle{Ergebnisse}
+Mit 10 Beispieltexten aufgenommen mit einem Mikrofon und einer Stimme wurden \% der S Texte und \% der SL Texte korrekt identifiziert.
 \end{frame}
 
-\begin{frame}
-\frametitle{Zwischenergebnisse}
-\begin{block}{Durchschnittsamplitudeverfahren}
-Mit Fenster von 0.25\,s werden tendenziell SL korrekt identifiziert, aber noch nicht zuverl"assig genug.
-\end{block}
-\end{frame}
-
-\section{Plan}
-
-\begin{frame}
-	\frametitle{Plan}
-	\begin{enumerate}
-		\item Identifizierung SL durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
-		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon \checkmark, L"ange \checkmark, Lautst"arke etc.\ und Anpassung der bisherigen Methode
-		\item Identifizierung SL ohne Referenz-S \checkmark
-		\item[\textcolor{purple}{2.}] Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
-	\end{enumerate}
-\end{frame}
+%\section{Plan}
+%
+%\begin{frame}
+%	\frametitle{Plan}
+%	\begin{enumerate}
+%		\item Identifizierung SL durch Vergleich der Durchschnittsamplitude im Bereich 1200-3500\,Hz \checkmark
+%		\item Einf"uhrung verschiedener Parameter, z.B.\ Mikrofon \checkmark, L"ange \checkmark, Lautst"arke etc.\ und Anpassung der bisherigen Methode
+%		\item Identifizierung SL ohne Referenz-S \checkmark
+%		\item[\textcolor{purple}{2.}] Identifizierung eines ''s'' in einem Wort, Fenster finden und entwickeltes Verfahren anwenden 
+%	\end{enumerate}
+%\end{frame}
 %
 %\section{Formanten}
 %

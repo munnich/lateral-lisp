@@ -143,9 +143,6 @@ function examinetext(file::String)
         end
     end
 
-    # verbosity - this should be removed if the current algorithm works
-    println("$file: $(length(segments)) / $(length(audio)) non-silent")
-
     # run through the segments and count the detected lisps and non-lisps
     hits = 0
     misses = 0
@@ -158,9 +155,6 @@ function examinetext(file::String)
             misses += 1
         end
     end
-
-    # verbosity - this should be removed if the current algorithm works
-    println("$file: $hits lisps, $misses non-lisps")
 
     # return true if lisp is detected off the assumption that
     # hits > misses ⇒ lisp ∧ hits < misses ⇒ ¬lisp
