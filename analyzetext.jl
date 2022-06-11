@@ -9,6 +9,41 @@ function parse()
         required = false
         arg_type = String
         default = "texts"
+        "--lisp-start", "-l"
+        help = "Lisp's starting frequency."
+        required = false
+        arg_type = Int
+        default = 3000
+        "--lisp-end", "-L"
+        help = "Lisp's ending frequency."
+        required = false
+        arg_type = Int
+        default = 4000
+        "--normal-start", "-n"
+        help = "Normal's starting frequency."
+        required = false
+        arg_type = Int
+        default = 2500
+        "--normal-end", "-N"
+        help = "Normal's ending frequency."
+        required = false
+        arg_type = Int
+        default = 3000
+        "--rest-start", "-r"
+        help = "Rest's starting frequency."
+        required = false
+        arg_type = Int
+        default = 1000
+        "--rest-end", "-R"
+        help = "Rest's ending frequency."
+        required = false
+        arg_type = Int
+        default = 4000
+        "--segment-length", "-s"
+        help = "Segment length in seconds."
+        required = false
+        arg_type = Float64
+        default = 0.5
     end
     
     parse_args(s)
@@ -68,7 +103,7 @@ struct SegmentResult
 end
 
 """
-    examinesegment(input::FFTResult, segment::Tuple{Int64, Int64})
+    examinesegment(input::FFTResult, segment::Tuple{Int, Int}, rest::Tuple{Int, Int})
 
 A reference-free examination algorithm.
 It takes an FFTResult and performs a bandpass over it, then normalizes that.
@@ -80,16 +115,17 @@ The result is an SegmentResult containing:
 * `result::Bool`
 * `diff::Float64`
 """
-function examinesegment(input::FFTResult, segment::Tuple{Int64, Int64})
+function examinesegment(input::FFTResult, segment::Tuple{Int, Int}, rest::Tuple{Int, Int})
     # adjustment for differing sample lengths
     factor = length(input.waveform) / input.fs
-    low = trunc(Int, 1001 * factor)
-    high = trunc(Int, 4001 * factor)
+    low = trunc(Int, rest[1] * factor)
+    high = trunc(Int, rest[2] * factor)
     # normalized bandpass
     slicedfft = normalize(input.fftmagnitude[low:high])
     # scale the segment
-    scaledsegment = [trunc(Int, (s - 1000) * factor) for s in segment]
-    slicemean = mean(slicedfft[scaledsegment[1]:scaledsegment[2]])
+    scaledsegment = [trunc(Int, (s - rest[1]) * factor) for s in segment]
+    # we have to make sure the rest segment isn't greater than the whole length
+    slicemean = mean(slicedfft[scaledsegment[1]:min(scaledsegment[2], end)])
     if segment[2] == length(slicedfft)
         slicemeanrest = mean(slicedfft[1:scaledsegment[1]])
     elseif segment[1] == 1
@@ -112,7 +148,8 @@ struct TextResult
 end
 
 """
-    examinetext(file::String)
+    examinetext(file::String, lisp::Tuple{Int, Int}, normal::Tuple{Int, Int},
+                rest::Tuple{Int, Int}, seglength::Float64)
 
 Examine text files for lisps based on examinesegment.
 Just counts the number of lisps vs. non-lisps detected and compares.
@@ -123,7 +160,8 @@ The result is a TextResult containing:
 * `hits::Int`
 * `misses::Int`
 """
-function examinetext(file::String)
+function examinetext(file::String, lisp::Tuple{Int, Int}, normal::Tuple{Int, Int},
+        rest::Tuple{Int, Int}, seglength::Float64)
     wavdata = wavread(file)
     audio = wavdata[1]
     fs = wavdata[2]
@@ -131,7 +169,7 @@ function examinetext(file::String)
     audiomean = mean(abs.(audio))
 
     # determine segment length based on sampling frequency
-    segmentlength = trunc(Int, fs / 2)
+    segmentlength = trunc(Int, fs * seglength)
 
     # filter silent segments
     segments = []
@@ -148,10 +186,10 @@ function examinetext(file::String)
     misses = 0
     for segment in segments
         # [3000, 4000] Hz seems to be the lisp
-        if examinesegment(segment, (3000, 4000)).result
+        if examinesegment(segment, lisp, rest).result
             hits += 1
         # [2500, 3000] Hz works well enough for the normal s
-        elseif examinesegment(segment, (2500, 3000)).result
+        elseif examinesegment(segment, normal, rest).result
             misses += 1
         end
     end
@@ -179,7 +217,11 @@ function main(args)
     # multithreaded loop for getting and examining the ffts
     # unfortunately the stuff we can use multithreading for isn't that slow
     Threads.@threads for i in 1:numfiles
-        results[i] = examinetext("$(args["folder"])/$(folder[i])")
+        results[i] = examinetext("$(args["folder"])/$(folder[i])",
+                                 (args["lisp-start"], args["lisp-end"]),
+                                 (args["normal-start"], args["normal-end"]),
+                                 (args["rest-start"], args["rest-end"]),
+                                 args["segment-length"])
     end
 
     println("Finished analysis:")
