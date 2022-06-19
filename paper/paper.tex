@@ -90,7 +90,7 @@ a standard sibilant production moves air out the front,
 while an SL moves air out one or both sides of the mouth.}\label{lispvisual}
 \end{figure}
 
-Noticing whether one is lisping can be difficulty for many,
+Noticing whether one is lisping can be difficult,
 especially in early stages of the correction process.
 As such,
 it is our goal to develop a simple and fast algorithm that can potentially be run in real-time on a weak device such a smartphone.
@@ -132,9 +132,9 @@ One such comparison graph can be scene in fig.\ \ref{examplefft}.
 
 To identify which sound we're dealing with,
 we begin by again splitting into aforementioned segments of 8000 samples each.
-For these, we subtract our recording's mean and normalizing in order to account for varying volumes.
+For these, we subtract our recording's mean and normalize in order to account for varying volumes.
 We again must calculate the absolute of the FFT of the segment we want to analyze.
-In order to remove unwanted low frequencies clearly not made by the test subject,
+In order to remove unwanted low frequencies not made by the test subject,
 we apply a high pass filter as described in eq.\ \ref{highpass} with boundary \(b = 1000\)\,Hz.
 
 \begin{equation}
@@ -142,7 +142,7 @@ H(x, b) = \begin{cases} x\ \mathrm{for}\ x < b \\ 0\ \mathrm{else} \end{cases}\l
 \end{equation}
 
 Frequencies below 1000\,Hz showed numerous minor peaks in tests,
-which are impossible for the human voice to have caused.
+which are not typical of sibilants and are discarded.
 These peaks are also visible in fig.\ \ref{examplefft}.
 
 Past this boundary, we assume a noise floor to be present.
