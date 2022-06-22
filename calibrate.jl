@@ -4,6 +4,43 @@ using Plots
 pyplot()
 include("shared.jl")
 
+function parse()
+    s = ArgParseSettings(description="Calibration helper for lisp detection.")
+    @add_arg_table s begin
+        "normal"
+        help = "Normal pronunciation's audio file for calibration."
+        required = true
+        arg_type = String
+        "lisp"
+        help = "Lisp's audio file for calibration."
+        required = true
+        arg_type = String
+        "--output", "-o"
+        help = "Output file path"
+        required = false
+        arg_type = String
+        default = "calibration.pdf"
+        "--highpass", "-p"
+        help = "High pass boundary frequency."
+        required = false
+        arg_type = Int
+        default = 1000
+        "--sample-start", "-S"
+        help = "Select starting sample to be analyzed in slice mode."
+        required = false
+        arg_type = Int
+        default = 1
+        "--sample-end", "-E"
+        help = "Select end sample to be analyzed in slice mode."
+        required = false
+        arg_type = Int
+        default = 8000
+    end
+    
+    parse_args(s)
+end
+
+
 # https://github.com/tungli/Findpeaks.jl
 """
 `findpeaks(y::Array{T},
@@ -168,24 +205,33 @@ function within_distance(
     peaks[.!peaks2del]
 end
 
-function main()
-    data = readandgetfft(["normal/Clip_3.wav", "lisp/Clip_3.wav"], 8000, 16000)
-    start = 1000
-    range = start:trunc(Int, data[2].fs / 2)
+function main(args)
+    # read the files
+    data = readandgetfft([args["normal"], args["lisp"]], args["sample-start"], args["sample-end"])
+    start = args["highpass"]
+    # set a range from high pass boundary to highest frequency
+    range = start:trunc(Int, data[1].fs / 2)
     plots = []
+    # loop over both files and run calibration
     for i in 1:2
+        # prepare the calibration data of the fft magnitude
         ofinterest = data[i].fftmagnitude[range]
+        # plot the fft magnitude
         x = (range |> collect)
         p = plot(title=data[i].title)
         plot!(p, data[i].fftmagnitude[1:trunc(Int, data[2].fs / 2)], label="FFT data")
+        # find the peaks with max distance of 1000 and height max(fftmagnitude) / 4
         peaks = findpeaks(ofinterest, x, max_dist=1000, min_height=maximum(ofinterest) / 4, min_prom=0.0, min_dist=0, threshold=0.0)
+        # the peaks have to be adjusted by the high pass boundary
         peakrange = [minimum(peaks), maximum(peaks)] .+ start
+        # print and plot the range
         println("Detected peak range: ", peakrange)
         vspan!(p, peakrange, alpha=0.5, label="Peak range")
         push!(plots, p)
     end
+    # plot the full thing in a smaller side-by-side plot
     plot(plots..., legend=false, xlabel="Frequency [Hz]", ylabel="Amplitude", size=(600, 200))
-    savefig("test.pdf")
+    savefig(args["output"])
 end
 
-main()
+main(parse())
