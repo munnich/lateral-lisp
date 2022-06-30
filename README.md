@@ -28,13 +28,13 @@ Detected peak range: [2779, 3777]
 To analyze texts using the calibration results on texts in e.g. `texts`:
 
 ```sh
-$ julia analyzetext.jl texts -l 2779 -L 3777 -n 2250 -N 3249
+$ julia analyzetext.jl texts -l 2779 -L 3777 -n 2099 -N 3091
 ```
 
 For analyzing larger datasets, it's recommended to enable multithreading:
 
 ```sh
-$ julia -t auto analyzetext.jl texts -l 2779 -L 3777 -n 2250 -N 3249
+$ julia -t auto analyzetext.jl texts -l 2779 -L 3777 -n 2099 -N 3091
 ```
 
 ## Documentation/paper
