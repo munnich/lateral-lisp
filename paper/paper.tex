@@ -30,7 +30,7 @@ line/.style={->,>=latex'}
 
 \title{Speech Intelligibility: Detecting Lateral Lisps}
 \date{}
-\author{\IEEEauthorblockN{Patrick Moritz Samson Munnich}\\
+\author{\IEEEauthorblockN{Patrick Moritz Samson Munnich, Prof.\ Dr.-Ing.\ Stefanie Dederichs}\\
 \textit{University of Applied Sciences D\"usseldorf}\\
 D\"usseldorf, Germany \\
 \href{mailto:patrick.muennich@study.hs-duesseldorf.de}{\texttt{patrick.muennich@study.hs-duesseldorf.de}}}
@@ -55,6 +55,8 @@ meaning analysis is far faster than real-time.
 The algorithm itself should be easily expandable to identify other sounds,
 e.g.\ other kinds of lisps.
 \end{abstract}
+
+% which text?
 
 \section{Introduction}
 
@@ -97,12 +99,12 @@ while an SL moves air out one or both sides of the mouth.}\label{lispvisual}
 Noticing whether one is lisping can be difficult,
 especially in early stages of the correction process.
 As such,
-it is our goal to develop a simple and fast algorithm that can potentially be run in real-time on a weak device such as a smartphone.
+it is our goal to develop a simple and fast algorithm that can potentially be run in real-time on a wearable device such as a smartphone.
 
 Similar research includes detecting sibilants for suppression of loud hissing in recordings \cite{Gonzalez} \cite{de-ess} and replacement of lisps in text-to-speech software using Random Forest Classifiers \cite{Itagi}.
 However,
 these are not tailored towards the SL,
-nor are they lightweight enough to be ran in real-time on weaker devices.
+nor are they lightweight enough to be ran in real-time on wearable devices.
 
 \section{Proposed Method}
 
@@ -117,7 +119,7 @@ We use the following parameters for our recordings:
 	\item Sampling frequency: \(f_\mathrm{s} = 8000\)\,Hz
 	\item Length of recording: \(t = 5\)\,s
 	\item Number of recordings: 6
-	\item Microphone: Gyvazla SML
+	\item Microphone: Gyvazla SML (omnidirectional capacitor)
 \end{itemize}
 
 Both SL and normal ''s'' sounds (S) are recorded with no pauses or other sounds.
@@ -179,12 +181,12 @@ which are not typical of sibilants and are discarded.
 These peaks are also visible in fig.\ \ref{examplefft}.
 
 Past this boundary, we assume a noise floor to be present.
-This noise floor will later be used to detect the peaks for S and SL.
+This noise floor will later be used to qualify the peaks for S and SL.
 To again compensate for variations, we normalize the FFT magnitudes.
 
 With our FFT magnitudes prepared for analysis,
-we can now use the peak bands found in \ref{analyze} of 2500-3000\,Hz for S and 3000-4000\,Hz for SL.
-We separate our magnitudes into the band we want to analyze and the rest of the frequencies,
+we can now use the peak bands found in section \ref{analyze} of 2500-3000\,Hz for S and 3000-4000\,Hz for SL.
+We separate the magnitudes into the band we want to analyze and the rest of the frequencies,
 for which we calculate the arithmetic mean and compare.
 If the band's mean is greater than the rest's,
 we assume the band's sound to be present.
@@ -200,7 +202,7 @@ a calibration is necessary for the algorithm to perform properly.
 To achieve this,
 we run a simple algorithm to detect the desired range.
 First, we run the same high-pass pass filter as before with the same boundary \(b = 1000\)\,Hz.
-We now use a peak finding algorithm forked from \cite{findpeaks} that works by comparing the height of the amplitude to a threshold \(h_\mathrm{min}\) calculated applying eq.\ \ref{hmin} on the magnitude of the FFT, \(A\):
+We now use a peak finding algorithm forked from \cite{findpeaks} that works by comparing the height of the amplitude to a threshold \(h_\mathrm{min}\) calculated applying eq.\ \ref{hmin} on the magnitudes \(A\) of the FFT:
 
 \begin{equation}
 h_\mathrm{min} = \frac{\max(A)}{4}
@@ -220,17 +222,20 @@ A visualization of these results for the aforementioned example can be found in 
 
 \subsection{Adjustment to full texts}\label{texts}
 
-To extend the algorithm from \ref{identify} so it can be used to analyze full texts,
-we use a similar setup as in \ref{analyze} with texts of length \(t = 5\)\,s once with and once without an SL.
+To extend the algorithm from section \ref{identify} so it can be used to analyze full texts,
+we use a similar setup as in section \ref{analyze} with file pairs of length \(t = 5\)\,s or \(t = 10\)\,s once with and once without an SL.
 These recordings are split into smaller segments and their arithmetic means are compared with the full audio file's.
 Segments with lower means are considered silent or too noisy and discarded.
-Our algorithm is then run over the remaining segments for both the S and SL ranges and the number of matches for the audio file are counted.
-We then compare which range had more matches,
-indicating whether the S or SL was present.
+
+Our algorithm is then run over the remaining segments for both the S and SL ranges.
+If more SL than S are identified,
+the file is classified as an SL file.
+Otherwise,
+the file is classified as an S file.
 
 To find an ideal segment length,
 10 recordings were tested with differing segment lengths between 0.1\,s and 1.0\,s in steps of 0.15\,s for one test subject and the results compared.
-The most accurate results were achieved with a segment length of 0.5\,s with 60\% of pairs correctly assigned as S and SL.
+The most accurate results were achieved with a segment length of 0.5\,s with 60\% of file pairs both correctly assigned as S and SL at the same time. % how do these 60% come to be? - should explain how strict the results are characterized - look up different terms - maybe use the nicer looking result - pairs are a bit too complicated
 Lower values rapidly fell in accuracy,
 while higher values stagnated at a 20\% lower accuracy.
 A graph of these results is in fig.\ \ref{segmentlength}.
@@ -243,9 +248,9 @@ A graph of these results is in fig.\ \ref{segmentlength}.
 
 \section{Results}
 
-We run our algorithm on full texts with the parameters from \ref{analyze} and recording lengths between 5\,s and 10\,s in English and German language.
-Using the frequency bands found in \ref{calibration}, 2250-3249\,Hz for S and 2788-3784\,Hz for SL, and the segment length from \ref{texts} on 10 pairs of texts recorded with and without the SL by our male test subject,
-our algorithm is able to correctly categorize 60\% of the pairs into S and SL.
+We run our algorithm on full texts with the parameters from section \ref{analyze} and recording lengths between 5\,s and 10\,s in English and German language.
+Using the frequency bands found in section \ref{calibration}, 2250-3249\,Hz for S and 2788-3784\,Hz for SL, and the segment length from section \ref{texts} on 10 file pairs of texts recorded with and without the SL by our male test subject.
+The algorithm is able to correctly categorize 85\% of the files.
 The algorithm is never able to detect the correct number of sibilants,
 as it almost always misses a few.
 The sole exception is one case in which more sibilants were detected,
@@ -254,41 +259,9 @@ The texts on which the algorithm tends to struggle are longer ones with fewer si
 In these cases,
 the algorithm tends to overestimate the number of S in the text.
 Of the shorter text pairs with more sibilants per second,
-83\% were correctly categorized.
+92\% were correctly categorized.
 Analyzing these longer texts in smaller chunks of e.g.\ 5\,s did not improve the results.
-The results of these can be seen in table \ref{resultstablesl} for SL and table \ref{resultstables} for S in the appendix.
-
-Due to a lack of access to other test subjects capable of performing a lateral lisp,
-we have no data on the algorithm's performance for others.
-
-Our implementation of the algorithm\footnote{\url{https://github.com/munnich/lateral-lisp}} in Julia is able to compile and analyze all 20 texts of lengths between 5\,s and 10\,s within 2.5\,s on an AMD Ryzen 3700x,
-meaning it does so far faster than real-time.
-
-\section{Conclusion}
-
-In this paper,
-we have proposed an original technique for detecting the lateral lisp,
-sigmatismus lateralis.
-Our method involves identification of characteristic regions of lisped and unlisped sounds,
-followed by simple comparisons of the arithmetic means of these regions in the frequency domain.
-For full texts,
-this is performed on smaller segments and these segments' results compared.
-
-The technique is simple to implement and can be run faster than real-time.
-With our test subject,
-60\% of pairs of lisped and unlisped texts were correctly categorized.
-Future works can focus on expansion of the algorithm with further techniques to raise the success rate,
-e.g.\ by using additional filters before analysis.
-
-\nocite{*}
-
-\printbibliography
-
-\pagebreak
-
-\section*{Appendix}
-
-\centering
+The results of these can be seen in table \ref{resultstablesl} for SL and table \ref{resultstables} for S.
 
 \begin{table}[h]
 \centering
@@ -309,9 +282,6 @@ Text & Length [s] & Sibilants & Correct SL & False S \\
 \end{tabular}
 
 \end{table}
-
-\centering
-
 \begin{table}[h]
 \centering
 \caption{Algorithm's results for 10 S text recordings.}\label{resultstables}
@@ -331,5 +301,30 @@ Text & Length [s] & Sibilants & Correct S & False SL \\
 \end{tabular}
 \end{table}
 
+Due to a lack of access to other test subjects capable of performing a lateral lisp,
+we have no data on the algorithm's performance for others.
+
+Our implementation of the algorithm\footnote{\url{https://github.com/munnich/lateral-lisp}} in Julia is able to compile and analyze all 20 texts of lengths between 5\,s and 10\,s within 2.5\,s on an AMD Ryzen 3700x,
+meaning it is suitable for real-time application.
+
+\section{Conclusion}
+
+In this paper,
+we have proposed an original technique for detecting the lateral lisp,
+sigmatismus lateralis.
+Our method involves identification of characteristic regions of lisped and unlisped sounds,
+followed by simple comparisons of the arithmetic means of these regions in the frequency domain.
+For full texts,
+this is performed on smaller segments and these segments' results compared.
+
+The technique is simple to implement and can provide live feedback.
+With our test subject,
+60\% of pairs of lisped and unlisped texts were correctly categorized.
+Future works can focus on expansion of the algorithm with further techniques to raise the success rate,
+e.g.\ by using additional filters before analysis.
+
+\nocite{*}
+
+\printbibliography
 
 \end{document}
